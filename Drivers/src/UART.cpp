@@ -171,12 +171,15 @@ UART::eUSCI_ERROR SatLib::UART::initUART(uint32_t baud)
 UART::eUSCI_ERROR UART::write(uint8_t * buf, size_t size, bool block, int16_t msToWait)
 {
     BaseType_t err = pdPASS;
+
     size_t it = 0;
     for(it = 0; it < size && (err == pdPASS); it++)
        err = xQueueSendToBack(this->TxBufferHandle, (void*)&buf[it], 1); // if the queue is full, it may be appropriate to wait a tick
 
-    if(uxQueueMessagesWaiting(this->TxBufferHandle) != size) // if there is not already a write going on
+    if(!((*UCAxIV) & UCTXIFG))
         xQueueReceive(this->TxBufferHandle, (void*)UCAxTXBUF, 0); // write the first character to enable sending.
+    else
+        return UART_TX_MUTEX_NOT_FREE;
 
     return err == pdPASS ? NO_ERR : BUF_FULL_ERR;
 }
@@ -186,10 +189,10 @@ UART::eUSCI_ERROR UART::write(uint8_t c)
     if(xQueueSendToBack(this->TxBufferHandle, (void*)&c, 0) != pdPASS)
         return BUF_FULL_ERR;
 
-    if(!((*UCAxIFG) & UCTXIFG)) // if there is not a character already being sent
-    {
-        xQueueReceiveFromISR(this->TxBufferHandle, (void*)UCAxTXBUF, NULL); // send the character.
-    }
+    if(!((*UCAxIV) & UCTXIFG))
+        xQueueReceive(this->TxBufferHandle, (void*)UCAxTXBUF, 0); // write the first character to enable sending.
+    else
+        return UART_TX_MUTEX_NOT_FREE;
 
     return NO_ERR;
 }
@@ -197,7 +200,7 @@ UART::eUSCI_ERROR UART::write(uint8_t c)
 uint8_t UART::read()
 {
     uint8_t ret = 0;
-    if(xQueueReceiveFromISR(this->RxBufferHandle, (void*)&ret, NULL) != pdPASS)
+    if(xQueueReceive(this->RxBufferHandle, (void*)&ret, 0) != pdPASS)
         return 0;
 
     return ret;
@@ -208,7 +211,7 @@ size_t UART::read(uint8_t * buf, size_t size)
     BaseType_t err = pdPASS;
     size_t it = 0;
     for(it = 0; it < size && (err == pdPASS); it++)
-        err = xQueueReceiveFromISR(this->RxBufferHandle, (void*)&buf[it], NULL);
+        err = xQueueReceive(this->RxBufferHandle, (void*)&buf[it], 0);
 
     return it;
 }

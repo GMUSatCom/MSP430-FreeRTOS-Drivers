@@ -13,6 +13,7 @@
 
 #include <FreeRTOS.h>
 #include <queue.h>
+#include <semphr.h>
 
 #include "DriverConfig.h"
 #include "eUSCI_A.h"
@@ -23,7 +24,7 @@ namespace SatLib
     {
     public:
         enum MODE : uint8_t {NONE, SPI_MASTER, SPI_SLAVE, UART_MODE};
-        enum eUSCI_ERROR : int8_t {NO_ERR = 0, BUF_FULL_ERR = -1, BUF_NULL_ERR = -2, eUSCI_NOT_SET_ERR = -3, eUSCI_UART_CONFIG_ERR = -4};
+        enum eUSCI_ERROR : int8_t {NO_ERR = 0, BUF_FULL_ERR = -1, BUF_NULL_ERR = -2, eUSCI_NOT_SET_ERR = -3, eUSCI_UART_CONFIG_ERR = -4, UART_TX_MUTEX_NOT_FREE = -5};
 
     private:
         BaseType_t xHigherPriorityTaskWokenByRx = NULL;
