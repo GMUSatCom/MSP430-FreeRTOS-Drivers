@@ -4,7 +4,7 @@
  *  Created on: Aug 10, 2019
  *      Author: Mynam
  */
-#include "../UART.h"
+#include "../eUSCI/UART.h"
 
 using namespace SatLib;
 
@@ -138,7 +138,6 @@ UART::eUSCI_ERROR SatLib::UART::initUART(uint32_t baud)
         UCBRF_Val = UCBRF_15;
         break;
     default:
-        this->mode = NONE;
         return eUSCI_UART_CONFIG_ERR;
     }
 
