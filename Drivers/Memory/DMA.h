@@ -17,10 +17,13 @@ namespace SatLib
     {
         volatile unsigned int * DMAxCTL;
         volatile unsigned int * DMAxSZ;
+        volatile unsigned int * DMACTLx;
         volatile __SFR_FARPTR * DMAxSA;
         volatile __SFR_FARPTR * DMAxDA;
         StaticSemaphore_t * pxMutexBuffer;
+        StaticSemaphore_t * pxFinishedBuffer;
         SemaphoreHandle_t mutex;
+        SemaphoreHandle_t finished;
     }DMA_Channel_type;
 
     extern DMA_Channel_type DMA_Channels[];

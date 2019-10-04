@@ -27,14 +27,21 @@ namespace SatLib
     StaticSemaphore_t DMA4MutexCB;
     StaticSemaphore_t DMA5MutexCB;
 
+    StaticSemaphore_t DMA0FinishedCB;
+    StaticSemaphore_t DMA1FinishedCB;
+    StaticSemaphore_t DMA2FinishedCB;
+    StaticSemaphore_t DMA3FinishedCB;
+    StaticSemaphore_t DMA4FinishedCB;
+    StaticSemaphore_t DMA5FinishedCB;
+
     #pragma PERSISTENT
     DMA_Channel_type DMA_Channels[] =
     {
-     {&DMA0CTL, &DMA0SZ, &DMA0SA, &DMA0DA, &DMA0MutexCB, NULL},
-     {&DMA1CTL, &DMA1SZ, &DMA1SA, &DMA1DA, &DMA1MutexCB, NULL},
-     {&DMA2CTL, &DMA2SZ, &DMA2SA, &DMA2DA, &DMA2MutexCB, NULL},
-     {&DMA3CTL, &DMA3SZ, &DMA3SA, &DMA3DA, &DMA3MutexCB, NULL},
-     {&DMA4CTL, &DMA4SZ, &DMA4SA, &DMA4DA, &DMA4MutexCB, NULL},
-     {&DMA5CTL, &DMA5SZ, &DMA5SA, &DMA5DA, &DMA5MutexCB, NULL}
+     {&DMA0CTL, &DMA0SZ, &DMACTL0, &DMA0SA, &DMA0DA, &DMA0MutexCB, &DMA0FinishedCB, NULL, NULL},
+     {&DMA1CTL, &DMA1SZ, &DMACTL0, &DMA1SA, &DMA1DA, &DMA1MutexCB, &DMA1FinishedCB, NULL, NULL},
+     {&DMA2CTL, &DMA2SZ, &DMACTL1, &DMA2SA, &DMA2DA, &DMA2MutexCB, &DMA2FinishedCB, NULL, NULL},
+     {&DMA3CTL, &DMA3SZ, &DMACTL1, &DMA3SA, &DMA3DA, &DMA3MutexCB, &DMA3FinishedCB, NULL, NULL},
+     {&DMA4CTL, &DMA4SZ, &DMACTL2, &DMA4SA, &DMA4DA, &DMA4MutexCB, &DMA4FinishedCB, NULL, NULL},
+     {&DMA5CTL, &DMA5SZ, &DMACTL2, &DMA5SA, &DMA5DA, &DMA5MutexCB, &DMA5FinishedCB, NULL, NULL}
     };
 }

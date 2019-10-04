@@ -241,11 +241,15 @@ void SatLib::SPI::transfer()
     *(TxChannel->DMAxSZ) = this->TransactionByteSize;
     *(RxChannel->DMAxSZ) = this->TransactionByteSize;
 
-    DMACTL2 |= Tx_DMAxTSEL | Rx_DMAxTSEL;
+    *(TxChannel->DMACTLx) |= Tx_DMAxTSEL;
+    *(RxChannel->DMACTLx) |= Rx_DMAxTSEL;
 
-    // configure DMA channels but don't enable them or set transfer size
-    *(TxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_3 | DMADSTINCR_0 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN;
-    *(RxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_0 | DMADSTINCR_3 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN;
+    // configure DMA channels. Tx channel increments only the source address, Rx channel increments only the destination address
+    *(TxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_3 | DMADSTINCR_0 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN | DMAIE;
+    *(RxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_0 | DMADSTINCR_3 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN | DMAIE;
+
+    xSemaphoreTake(TxChannel->finished, 0); // Guaranteed to be taken so no need to wait.
+    xSemaphoreTake(RxChannel->finished, 0); // Guaranteed to be taken so no need to wait.
 
     *(registers->UCAxIFG) |= UCTXIFG;
 
@@ -254,7 +258,10 @@ void SatLib::SPI::transfer()
 
 void SatLib::SPI::endTransaction()
 {
-    if(*(registers->UCAxCTLW0) & UCMST == UCMST) // if configured as master
+    // TODO check if the transaction is finished. If not, wait.
+    xSemaphoreTake(this->TxChannel->finished, portMAX_DELAY); // should work as soon as the DMA transaction finishes.
+    xSemaphoreTake(this->RxChannel->finished, portMAX_DELAY);
+    if((*(registers->UCAxCTLW0) & UCMST) == UCMST) // if configured as master
     {
         // set size to zero (prevents erroneous DMA transfers while the other writes occur)
         *(TxChannel->DMAxSZ) = 0;
@@ -267,12 +274,17 @@ void SatLib::SPI::endTransaction()
         *(RxChannel->DMAxCTL) = 0;
 
         // reset registers
+        *(registers->UCAxCTLW0) |= UCSWRST;
         *(registers->UCAxCTLW0) = 0;
         *(registers->UCAxBRW) = 0;
 
         // return DMA channels to the available pool
         xSemaphoreGive(TxChannel->mutex);
         xSemaphoreGive(RxChannel->mutex);
+
+        // if this is running, the Tx and Rx Channels have finished sending.
+        xSemaphoreGive(this->TxChannel->finished);
+        xSemaphoreGive(this->RxChannel->finished);
 
         // unconfigure pins
         *(registers->PxSEL0) &= ~(registers->PxSEL0BITS_SPI);
@@ -293,5 +305,4 @@ void SatLib::SPI::endTransaction()
         // reset the transaction size
         TransactionByteSize = 0;
     }
-
 }
