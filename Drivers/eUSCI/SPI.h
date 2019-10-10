@@ -12,6 +12,11 @@
 #include <stdint.h>
 #include <string.h> // size_t
 
+#define SPI_MODE0 {UCSSEL__SMCLK, 0x2, SatLib::SPI::ClockPolarity::LOW, SatLib::SPI::ClockPhase::CPHA_0, SatLib::SPI::BitOrder::MSB, SatLib::SPI::Role::MASTER, SatLib::SPI::CharacterSize::BITS8, 0, 1}
+#define SPI_MODE1 {UCSSEL__SMCLK, 0x2, SatLib::SPI::ClockPolarity::LOW, SatLib::SPI::ClockPhase::CPHA_1, SatLib::SPI::BitOrder::MSB, SatLib::SPI::Role::MASTER, SatLib::SPI::CharacterSize::BITS8, 0, 1}
+#define SPI_MODE2 {UCSSEL__SMCLK, 0x2, SatLib::SPI::ClockPolarity::HIGH, SatLib::SPI::ClockPhase::CPHA_0, SatLib::SPI::BitOrder::MSB, SatLib::SPI::Role::MASTER, SatLib::SPI::CharacterSize::BITS8, 0, 1}
+#define SPI_MODE3 {UCSSEL__SMCLK, 0x2, SatLib::SPI::ClockPolarity::HIGH, SatLib::SPI::ClockPhase::CPHA_1, SatLib::SPI::BitOrder::MSB, SatLib::SPI::Role::MASTER, SatLib::SPI::CharacterSize::BITS8, 0, 1}
+
 namespace SatLib
 {
     class SPI
@@ -22,6 +27,7 @@ namespace SatLib
         enum BitOrder : uint16_t {LSB = 0, MSB = UCMSB};
         enum Role : uint16_t {SLAVE = 0, MASTER = UCMST};
         enum CharacterSize : uint16_t {BITS8 = 0, BITS7 = UC7BIT};
+        enum ClockPhase : uint16_t {CPHA_1 = 0, CPHA_0 = UCCKPH};
 
         enum TransactionError {NO_ERR, RX_DMA_NOT_FREE, TX_DMA_NOT_FREE, UNSUPPORTED_DMA_SELECTION_TX, UNSUPPORTED_DMA_SELECTION_RX, FREQ_TOO_HIGH, UNSUPPORTED_FEATURE};
 
@@ -30,6 +36,7 @@ namespace SatLib
             int clockSelect;
             unsigned int ClockDivisor;
             ClockPolarity polarity;
+            ClockPhase phase;
             BitOrder order;
             Role role;
             CharacterSize chSize;
@@ -71,11 +78,12 @@ namespace SatLib
 
         // takes appropriate DMA mutexes and set the module settings. Blocks for msToWait seconds, unless msToWait is negative, in which case it blocks indefinitely waiting for the Rx and Tx DMA channels
         // max wait time is msToWait * 2 since it waits that long for both Rx and Tx max
-        TransactionError beginTransaction(uint8_t * TxBuffer, size_t TxSize, uint8_t * RxBuffer, size_t RxSize, SPI_Settings settings = {UCSSEL__SMCLK, 0x2, LOW, MSB, MASTER, BITS8, 0, 1}, int16_t msToWait = -1);
+        TransactionError beginTransaction(uint8_t * TxBuffer, size_t TxSize, uint8_t * RxBuffer, size_t RxSize, SPI_Settings settings = SPI_MODE0, int16_t msToWait = -1);
 
         void transfer(); // actually transmits the things you have written. Fills up the RxBuffer based on what is received. If there is a slave select pin, pull it to the desired configuration before calling this function.
 
-        inline bool write(uint8_t byte);
+        bool write(uint8_t byte);
+
         size_t write(uint8_t * bytes, size_t size); // writes size number of bytes or until the end of the buffer. returns the actual number of bytes written
 
         uint8_t read();

@@ -166,7 +166,7 @@ SatLib::SPI::TransactionError SatLib::SPI::beginTransaction(uint8_t* TxBuffer, s
     if(registersType == A)
     {
         *(registers->UCAxCTLW0) = UCSWRST;
-        *(registers->UCAxCTLW0) |= settings.role | settings.order | settings.polarity | settings.clockSelect | settings.chSize | UCSYNC;
+        *(registers->UCAxCTLW0) |= settings.role | settings.order | settings.polarity | settings.phase | settings.clockSelect | settings.chSize | UCSYNC;
         *(registers->UCAxBRW) = settings.ClockDivisor;
         *(registers->UCAxCTLW0) &= ~(UCSWRST);
     }else{
