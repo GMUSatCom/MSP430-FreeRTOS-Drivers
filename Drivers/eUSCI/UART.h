@@ -25,7 +25,7 @@ namespace SatLib
     class UART
     {
     public:
-        enum eUSCI_ERROR : int16_t {NO_ERR = 0, BUF_FULL_ERR = -1, BUF_NULL_ERR = -2, eUSCI_NOT_SET_ERR = -3, eUSCI_UART_CONFIG_ERR = -4, UART_TX_BUSY = -5};
+        enum UART_ERROR : int16_t {NO_ERR = 0, BUF_FULL_ERR = -1, eUSCI_NOT_SET_ERR = -2, eUSCI_UART_CONFIG_ERR = -3, TASK_ALREADY_WAITING = -4, TIMEOUT_ERR = -5};
 
     private:
         uint32_t baudrate = 0;
@@ -56,7 +56,7 @@ namespace SatLib
 
         TaskHandle_t waitingTask = NULL;
 
-        eUSCI_ERROR initUART(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz);
+        UART_ERROR initUART(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz);
 
     public:
 
@@ -94,7 +94,7 @@ namespace SatLib
 
         size_t write(uint8_t * buf, size_t size); // write to buffer, max size is the same as MAX(int16_t) since this returns int16_t
 
-        eUSCI_ERROR write(uint8_t c); // write a single character
+        UART_ERROR write(uint8_t c); // write a single character
 
         uint8_t read(); // read a single character from the buffer. Returns 0 if there isn't one
 
@@ -103,11 +103,11 @@ namespace SatLib
         /**
          * Wait on a single character to enter the queue for msToWait. If msToWait is negative, the delay is infinite.
          */
-        bool waitOnRx(int32_t msToWait = -1);
+        UART_ERROR waitOnRx(int32_t msToWait = -1);
 
         /**
          * Configured the pins and the eUSCI registers for transmission and reception.
          */
-        virtual eUSCI_ERROR begin(uint32_t baud, unsigned int srcClkSelect = UCSSEL__SMCLK, uint32_t srcClkHz = 8000000);
+        UART_ERROR begin(uint32_t baud, unsigned int srcClkSelect = UCSSEL__SMCLK, uint32_t srcClkHz = 8000000);
     };
 }
