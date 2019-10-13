@@ -14,23 +14,20 @@
 #include <FreeRTOS.h>
 #include <queue.h>
 #include <semphr.h>
+#include <task.h>
 
 #include "../DriverConfig.h"
 #include "eUSCI_A.h"
+#include "RingBuffer.h"
 
 namespace SatLib
 {
     class UART
     {
     public:
-        enum eUSCI_ERROR : int8_t {NO_ERR = 0, BUF_FULL_ERR = -1, BUF_NULL_ERR = -2, eUSCI_NOT_SET_ERR = -3, eUSCI_UART_CONFIG_ERR = -4, UART_TX_MUTEX_NOT_FREE = -5};
+        enum eUSCI_ERROR : int16_t {NO_ERR = 0, BUF_FULL_ERR = -1, BUF_NULL_ERR = -2, eUSCI_NOT_SET_ERR = -3, eUSCI_UART_CONFIG_ERR = -4, UART_TX_BUSY = -5};
 
     private:
-        BaseType_t xHigherPriorityTaskWokenByRx = NULL;
-
-        unsigned int srcClkSelect;
-        uint32_t sourceClkHz = 0;
-
         uint32_t baudrate = 0;
 
         // references to the registers //
@@ -48,14 +45,8 @@ namespace SatLib
         volatile unsigned int * UCAxIFG;
         volatile unsigned int * UCAxIV;
 
-        QueueHandle_t TxBufferHandle;
-        QueueHandle_t RxBufferHandle;
-
-        StaticQueue_t TxBufferTCB;
-        StaticQueue_t RxBufferTCB;
-
-        uint8_t TxBuf[eUSCI_DEFAULT_BUF_SIZE];
-        uint8_t RxBuf[eUSCI_DEFAULT_BUF_SIZE];
+        RingBuffer<uint8_t> * TxBuffer;
+        RingBuffer<uint8_t> * RxBuffer;
 
         int16_t UCBRS_mask;
 
@@ -63,11 +54,13 @@ namespace SatLib
         unsigned char UCBRF_Val;
         double lookup;
 
-        eUSCI_ERROR initUART(uint32_t baud);
+        TaskHandle_t waitingTask = NULL;
+
+        eUSCI_ERROR initUART(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz);
 
     public:
 
-        UART(uint8_t module, unsigned int srcClkSelect = UCSSEL__SMCLK, uint32_t srcClkHz = 8000000);
+        UART(uint8_t module, RingBuffer<uint8_t> * TxBuffer, RingBuffer<uint8_t> * RxBuffer);
 
         inline void IRQHandler() __attribute__((hot, flatten))
         {
@@ -75,11 +68,13 @@ namespace SatLib
             {
                 case USCI_NONE: break; // no interrupt source
                 case USCI_UART_UCRXIFG: // receive buffer full, read in the character so the next one can be written in.
-                    xQueueSendToBackFromISR(this->RxBufferHandle, (void*)UCAxRXBUF, &xHigherPriorityTaskWokenByRx);
+                    RxBuffer->put((uint8_t)(*UCAxRXBUF));
+                    if(waitingTask != NULL)
+                        vTaskNotifyGiveFromISR(waitingTask, NULL);
                     break;
                 case USCI_UART_UCTXIFG:
-                    if(xQueueIsQueueEmptyFromISR(this->TxBufferHandle) == pdFALSE)
-                        xQueueReceiveFromISR(this->TxBufferHandle, (void*)UCAxTXBUF, NULL);
+                    if(!TxBuffer->empty())
+                        *UCAxTXBUF = TxBuffer->get();
                     break; // transmit buffer full, write new character to buffer so the next one can get in
                 case USCI_UART_UCSTTIFG: break; // start bit recieved
                 case USCI_UART_UCTXCPTIFG: break; // transmit complete
@@ -89,15 +84,15 @@ namespace SatLib
 
         inline size_t available() // returns the number of bytes in the buffer
         {
-            return (size_t)uxQueueMessagesWaitingFromISR(this->RxBufferHandle);
+            return RxBuffer->size();
         }
 
         inline size_t txBytesWaiting()
         {
-            return (size_t)uxQueueMessagesWaitingFromISR(this->TxBufferHandle);
+            return TxBuffer->size();
         }
 
-        eUSCI_ERROR write(uint8_t * buf, size_t size, bool block = true, int16_t msToWait = -1); // write to buffer
+        size_t write(uint8_t * buf, size_t size); // write to buffer, max size is the same as MAX(int16_t) since this returns int16_t
 
         eUSCI_ERROR write(uint8_t c); // write a single character
 
@@ -113,6 +108,6 @@ namespace SatLib
         /**
          * Configured the pins and the eUSCI registers for transmission and reception.
          */
-        virtual eUSCI_ERROR begin(uint32_t baud);
+        virtual eUSCI_ERROR begin(uint32_t baud, unsigned int srcClkSelect = UCSSEL__SMCLK, uint32_t srcClkHz = 8000000);
     };
 }

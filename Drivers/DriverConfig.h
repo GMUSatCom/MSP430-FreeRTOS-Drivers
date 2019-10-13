@@ -6,5 +6,3 @@
  */
 
 #pragma once
-
-#define eUSCI_DEFAULT_BUF_SIZE 64

@@ -14,6 +14,7 @@
 within this file. */
 extern "C"
 {
+
     void vApplicationMallocFailedHook( void );
 
     void vApplicationIdleHook( void );
@@ -44,7 +45,7 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 
 void vApplicationIdleHook( void )
 {
-    __bis_SR_register( LPM4_bits + GIE );
+    __bis_SR_register( LPM2_bits + GIE );
     __no_operation();
 }
 /*-----------------------------------------------------------*/
