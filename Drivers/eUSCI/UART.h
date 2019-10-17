@@ -54,7 +54,8 @@ namespace SatLib
         unsigned char UCBRF_Val;
         double lookup;
 
-        TaskHandle_t waitingTask = NULL;
+        TaskHandle_t waitingTaskRx = NULL;
+        TaskHandle_t waitingTaskTx = NULL;
 
         UART_ERROR initUART(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz);
 
@@ -69,12 +70,21 @@ namespace SatLib
                 case USCI_NONE: break; // no interrupt source
                 case USCI_UART_UCRXIFG: // receive buffer full, read in the character so the next one can be written in.
                     RxBuffer->put((uint8_t)(*UCAxRXBUF));
-                    if(waitingTask != NULL)
-                        vTaskNotifyGiveFromISR(waitingTask, NULL);
+                    if(waitingTaskRx != NULL)
+                    {
+                        vTaskNotifyGiveFromISR(waitingTaskRx, NULL);
+                    }
                     break;
                 case USCI_UART_UCTXIFG:
                     if(!TxBuffer->empty())
+                    {
                         *UCAxTXBUF = TxBuffer->get();
+                    }else{
+                        if(waitingTaskTx != NULL)
+                        {
+                            vTaskNotifyGiveFromISR(waitingTaskTx, NULL);
+                        }
+                    }
                     break; // transmit buffer full, write new character to buffer so the next one can get in
                 case USCI_UART_UCSTTIFG: break; // start bit recieved
                 case USCI_UART_UCTXCPTIFG: break; // transmit complete
@@ -92,6 +102,16 @@ namespace SatLib
             return TxBuffer->size();
         }
 
+        inline uint32_t getBaud()
+        {
+            return baudrate;
+        }
+
+        inline void clear()
+        {
+            RxBuffer->reset();
+        }
+
         size_t write(uint8_t * buf, size_t size); // write to buffer, max size is the same as MAX(int16_t) since this returns int16_t
 
         UART_ERROR write(uint8_t c); // write a single character
@@ -106,8 +126,18 @@ namespace SatLib
         UART_ERROR waitOnRx(int32_t msToWait = -1);
 
         /**
+         * Wait for any current writes to complete. If msToWait is negative, the dealy is infinite. If there are no current writes, this returns immediately.
+         */
+        UART_ERROR waitOnTx(int32_t msToWait = -1);
+
+        /**
          * Configured the pins and the eUSCI registers for transmission and reception.
          */
         UART_ERROR begin(uint32_t baud, unsigned int srcClkSelect = UCSSEL__SMCLK, uint32_t srcClkHz = 8000000);
+
+        /**
+         * Un-initializes the UART port and unassigns pins.
+         */
+        void end();
     };
 }

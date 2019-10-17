@@ -133,7 +133,7 @@ SatLib::UART::UART_ERROR SatLib::UART::initUART(uint32_t baud, unsigned int srcC
         return eUSCI_UART_CONFIG_ERR;
     }
 
-    lookup = (((double)srcClkHz)/((double)baudrate));
+    lookup = (((double)srcClkHz)/((double)baud));
     lookup = lookup - ((int)lookup);
     UCBRS_mask = -1;
 
@@ -155,7 +155,6 @@ SatLib::UART::UART_ERROR SatLib::UART::initUART(uint32_t baud, unsigned int srcC
     *UCAxCTLW0 &= ~(UCSWRST);
 
     *UCAxIE = UCRXIE | UCTXIE; // Rx ISR enabled so I can store characters in the right buffers, Tx ISR enabled so I can transmit characters from a buffer
-                                         // Start-bit received interrupt enabled to wake the chip up from low power mode a bit earlier so we don't miss the first character if waking from idle.
 
     return NO_ERR;
 }
@@ -218,10 +217,13 @@ size_t SatLib::UART::read(uint8_t * buf, size_t size)
 
 SatLib::UART::UART_ERROR SatLib::UART::waitOnRx(int32_t msToWait)
 {
-    if(waitingTask != NULL) // multiple tasks can no longer wait for the output at the same time.
+    if(!RxBuffer->empty())
+        return NO_ERR;
+
+    if(waitingTaskRx != NULL) // multiple tasks can no longer wait for the output at the same time.
         return TASK_ALREADY_WAITING;       // prevents this from causing tasks to block forever
 
-    this->waitingTask = xTaskGetCurrentTaskHandle(); // set the waiting task so the ISR knows who to notify
+    this->waitingTaskRx = xTaskGetCurrentTaskHandle(); // set the waiting task so the ISR knows who to notify
     BaseType_t ret;
 
     if(msToWait > 0) // if the user specified how many milliseconds to wait
@@ -229,10 +231,61 @@ SatLib::UART::UART_ERROR SatLib::UART::waitOnRx(int32_t msToWait)
     else // otherwise
         ret = ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // block indefinitely and let the MCU do other things while we wait for UART
 
-    this->waitingTask = NULL; // reset the waiting task
+    this->waitingTaskRx = NULL; // reset the waiting task
 
     if(ret != pdFALSE) // if a notification was received before the timeout expired
         return NO_ERR; // return NO_ERROR
     else // otherwise
         return TIMEOUT_ERR; // the timer expired
+}
+
+SatLib::UART::UART_ERROR SatLib::UART::waitOnTx(int32_t msToWait)
+{
+    if(TxBuffer->empty())
+        return NO_ERR;
+
+    if(waitingTaskTx != NULL)
+        return TASK_ALREADY_WAITING;
+
+    this->waitingTaskTx = xTaskGetCurrentTaskHandle();
+    BaseType_t ret;
+
+    if(msToWait > 0)
+        ret = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(msToWait));
+    else
+        ret = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    waitingTaskTx = NULL;
+
+    if(ret != pdFALSE)
+        return NO_ERR;
+    else
+        return TIMEOUT_ERR;
+}
+
+void SatLib::UART::end()
+{
+    while(waitingTaskTx != NULL) // wait for any pending writes to finish
+        vTaskDelay(1); // give UART time to finish writing and give the writing task time to be notified.
+
+    while(waitingTaskRx != NULL) // avoid a situation where you cause some task to block forever by calling end.
+        vTaskDelay(1); // give the task time to get the stuff from UART.
+
+    *UCAxIE = 0; // prevent erroneous reads or sends during this time.
+
+    // unassign GPIO from the module.
+    *PxSEL0 &= ~(PxSEL0BITS); // clear PxSEL0
+    *PxSEL1 &= ~(PxSEL1BITS); // clear PxSEL1
+    PM5CTL0 &= ~LOCKLPM5; // ensure GPIO changes take effect
+
+    this->baudrate = 0; // reset this variable since it's no longer valid.
+
+    *UCAxCTLW0 = UCSWRST;
+    *UCAxBRW = 0;
+    *UCAxMCTLW = 0;
+    unsigned int dummy = *UCAxRXBUF; // read UCAxRXBUF to clear interrupt.
+    *UCAxCTLW0 = 0;
+
+    RxBuffer->reset();
+    TxBuffer->reset();
 }

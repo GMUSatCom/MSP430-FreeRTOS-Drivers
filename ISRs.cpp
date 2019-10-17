@@ -10,6 +10,7 @@
 #include "Drivers/Memory/DMA.h"
 
 extern SatLib::UART backchannelUART;
+extern SatLib::UART GPSSerial;
 extern SatLib::DMA_Channel_type SatLib::DMA_Channels[];
 
 extern "C"
@@ -24,7 +25,7 @@ extern "C"
     #pragma vector=EUSCI_A1_VECTOR
     __interrupt void USCI_A1_ISR(void)
     {
-
+        GPSSerial.IRQHandler();
     }
 
     #pragma vector=EUSCI_A3_VECTOR
