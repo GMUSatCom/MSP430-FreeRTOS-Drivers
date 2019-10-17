@@ -6,14 +6,13 @@
  */
 #include "../eUSCI/UART.h"
 
-using namespace SatLib;
-
 //Baud Rate calculation:
 //SourceClk/(16*desiredBaud)
+//Example:
 //8000000/(16*115200) = 4.34
-//Fractional Part = 0.083 so UCBRSx = 0x4 according to Table 30-4. USBRSx Settings for Fractional Portion of N=fBRCLK/Baud Rate (Family User's Guide)
-//UCAxBRW = 52
-//UCBRFx = int( (52.083-52)*16) = 5
+//Fractional Part = 0.34 so UCBRSx = 0x4 according to Table 30-4. USBRSx Settings for Fractional Portion of N=fBRCLK/Baud Rate (Family User's Guide)
+//UCAxBRW = 4
+//UCBRFx = int( (4.34-4)*16) = 5
 // The steps here are from Section 30.3.10 of the Family User's Guide
 
 struct
@@ -35,20 +34,11 @@ static UCBRSx_TableEntry UCBRSx_Vals[] = {
                                              {0.8751, 0xF7}, {0.9004, 0xFB}, {0.9170, 0xFD}, {0.9288, 0xFE}
                                           };
 
-UART::UART(uint8_t module, unsigned int srcClkSelect, uint32_t srcClkHz)
+SatLib::UART::UART(uint8_t module, RingBuffer<uint8_t> * TxBuffer, RingBuffer<uint8_t> * RxBuffer)
 {
-     this->TxBufferHandle = xQueueCreateStatic(eUSCI_DEFAULT_BUF_SIZE,
-                                                  sizeof(uint8_t),
-                                                  this->TxBuf,
-                                                  &this->TxBufferTCB);
-
-     this->RxBufferHandle = xQueueCreateStatic(eUSCI_DEFAULT_BUF_SIZE,
-                                                  sizeof(uint8_t),
-                                                  this->RxBuf,
-                                                  &this->RxBufferTCB);
-
      eUSCI_A_Type eUSCI_A_module = eUSCI_A_Modules[module];
 
+     // ugly and memory inefficient but saves a good amount of processing time because we don't need to jump to parts of a struct
      this->PxSEL0 = eUSCI_A_module.PxSEL0;
      this->PxSEL1 = eUSCI_A_module.PxSEL1;
      this->PxSEL0BITS = eUSCI_A_module.PxSEL0BITS;
@@ -62,12 +52,14 @@ UART::UART(uint8_t module, unsigned int srcClkSelect, uint32_t srcClkHz)
      this->UCAxBRW = eUSCI_A_module.UCAxBRW;
      this->UCAxIFG = eUSCI_A_module.UCAxIFG;
      this->UCAxIV = eUSCI_A_module.UCAxIV;
-     this->srcClkSelect = srcClkSelect;
 
-     this->sourceClkHz = srcClkHz;
+     this->TxBuffer = TxBuffer;
+     this->RxBuffer = RxBuffer;
+     this->TxBuffer->reset();
+     this->RxBuffer->reset();
 }
 
-UART::eUSCI_ERROR UART::begin(uint32_t baud)
+SatLib::UART::UART_ERROR SatLib::UART::begin(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz)
 {
     *PxSEL0 &= ~(PxSEL0BITS); // clear PxSEL0
     *PxSEL0 |= PxSEL0BITS; // set the PxSEL0BITS
@@ -79,13 +71,13 @@ UART::eUSCI_ERROR UART::begin(uint32_t baud)
 
     this->baudrate = baud;
 
-    return initUART(baud);
+    return initUART(baud, srcClkSelect, srcClkHz);
 }
 
-UART::eUSCI_ERROR SatLib::UART::initUART(uint32_t baud)
+SatLib::UART::UART_ERROR SatLib::UART::initUART(uint32_t baud, unsigned int srcClkSelect, uint32_t srcClkHz)
 {
-    UCAxBRW_Val = sourceClkHz/(16*baud);
-    UCBRF_Val = int((((double)sourceClkHz/(16.0*((double)baud))) - ((double)UCAxBRW_Val)) * 16);
+    UCAxBRW_Val = srcClkHz/(16*baud);
+    UCBRF_Val = int((((double)srcClkHz/(16.0*((double)baud))) - ((double)UCAxBRW_Val)) * 16);
 
     switch(UCBRF_Val)
     {
@@ -141,7 +133,7 @@ UART::eUSCI_ERROR SatLib::UART::initUART(uint32_t baud)
         return eUSCI_UART_CONFIG_ERR;
     }
 
-    lookup = (((double)sourceClkHz)/((double)baudrate));
+    lookup = (((double)srcClkHz)/((double)baud));
     lookup = lookup - ((int)lookup);
     UCBRS_mask = -1;
 
@@ -162,64 +154,138 @@ UART::eUSCI_ERROR SatLib::UART::initUART(uint32_t baud)
     *UCAxMCTLW = UCOS16 | UCBRF_Val | (UCBRS_mask << 8);
     *UCAxCTLW0 &= ~(UCSWRST);
 
-    *UCAxIE = UCRXIE | UCTXIE;
+    *UCAxIE = UCRXIE | UCTXIE; // Rx ISR enabled so I can store characters in the right buffers, Tx ISR enabled so I can transmit characters from a buffer
 
     return NO_ERR;
 }
 
-UART::eUSCI_ERROR UART::write(uint8_t * buf, size_t size, bool block, int16_t msToWait)
+size_t SatLib::UART::write(uint8_t * buf, size_t size)
 {
-    BaseType_t err = pdPASS;
-
     size_t it = 0;
-    for(it = 0; it < size && (err == pdPASS); it++)
-       err = xQueueSendToBack(this->TxBufferHandle, (void*)&buf[it], 1); // if the queue is full, it may be appropriate to wait a tick
+    while(!TxBuffer->full() && it < size)
+    {
+        taskENTER_CRITICAL();
+        TxBuffer->put(buf[it]);
+        taskEXIT_CRITICAL();
+        it++;
+    }
 
     if(!((*UCAxIV) & UCTXIFG))
-        xQueueReceive(this->TxBufferHandle, (void*)UCAxTXBUF, 0); // write the first character to enable sending.
-    else
-        return UART_TX_MUTEX_NOT_FREE;
-
-    return err == pdPASS ? NO_ERR : BUF_FULL_ERR;
-}
-
-UART::eUSCI_ERROR UART::write(uint8_t c)
-{
-    if(xQueueSendToBack(this->TxBufferHandle, (void*)&c, 0) != pdPASS)
-        return BUF_FULL_ERR;
-
-    if(!((*UCAxIV) & UCTXIFG))
-        xQueueReceive(this->TxBufferHandle, (void*)UCAxTXBUF, 0); // write the first character to enable sending.
-    else
-        return UART_TX_MUTEX_NOT_FREE;
-
-    return NO_ERR;
-}
-
-uint8_t UART::read()
-{
-    uint8_t ret = 0;
-    if(xQueueReceive(this->RxBufferHandle, (void*)&ret, 0) != pdPASS)
-        return 0;
-
-    return ret;
-}
-
-size_t UART::read(uint8_t * buf, size_t size)
-{
-    BaseType_t err = pdPASS;
-    size_t it = 0;
-    for(it = 0; it < size && (err == pdPASS); it++)
-        err = xQueueReceive(this->RxBufferHandle, (void*)&buf[it], 0);
+        *UCAxTXBUF = TxBuffer->get();
 
     return it;
 }
 
-bool UART::waitOnRx(int32_t msToWait)
+SatLib::UART::UART_ERROR SatLib::UART::write(uint8_t c)
 {
-    uint8_t junk;
-    if(msToWait < 0)
-        return xQueuePeek(this->RxBufferHandle, (void*)&junk, portMAX_DELAY) == pdPASS;
+    if(TxBuffer->full())
+        return BUF_FULL_ERR;
+
+    if(!((*UCAxIV) & UCTXIFG)){
+        *UCAxTXBUF = c;
+    }else{
+        taskENTER_CRITICAL();
+        TxBuffer->put(c);
+        taskEXIT_CRITICAL();
+    }
+
+
+    return NO_ERR;
+}
+
+uint8_t SatLib::UART::read()
+{
+    taskENTER_CRITICAL();
+    uint8_t ret = RxBuffer->get();
+    taskEXIT_CRITICAL();
+    return ret;
+}
+
+size_t SatLib::UART::read(uint8_t * buf, size_t size)
+{
+    size_t it = 0;
+    while(!RxBuffer->empty() && it < size)
+    {
+        taskENTER_CRITICAL();
+        buf[it] = RxBuffer->get();
+        taskEXIT_CRITICAL();
+        it++;
+    }
+
+    return it;
+}
+
+SatLib::UART::UART_ERROR SatLib::UART::waitOnRx(int32_t msToWait)
+{
+    if(!RxBuffer->empty())
+        return NO_ERR;
+
+    if(waitingTaskRx != NULL) // multiple tasks can no longer wait for the output at the same time.
+        return TASK_ALREADY_WAITING;       // prevents this from causing tasks to block forever
+
+    this->waitingTaskRx = xTaskGetCurrentTaskHandle(); // set the waiting task so the ISR knows who to notify
+    BaseType_t ret;
+
+    if(msToWait > 0) // if the user specified how many milliseconds to wait
+        ret = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(msToWait)); // wait for msToWait milliseconds
+    else // otherwise
+        ret = ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // block indefinitely and let the MCU do other things while we wait for UART
+
+    this->waitingTaskRx = NULL; // reset the waiting task
+
+    if(ret != pdFALSE) // if a notification was received before the timeout expired
+        return NO_ERR; // return NO_ERROR
+    else // otherwise
+        return TIMEOUT_ERR; // the timer expired
+}
+
+SatLib::UART::UART_ERROR SatLib::UART::waitOnTx(int32_t msToWait)
+{
+    if(TxBuffer->empty())
+        return NO_ERR;
+
+    if(waitingTaskTx != NULL)
+        return TASK_ALREADY_WAITING;
+
+    this->waitingTaskTx = xTaskGetCurrentTaskHandle();
+    BaseType_t ret;
+
+    if(msToWait > 0)
+        ret = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(msToWait));
     else
-        return xQueuePeek(this->RxBufferHandle, (void*)&junk, pdMS_TO_TICKS(msToWait)) == pdPASS;
+        ret = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+    waitingTaskTx = NULL;
+
+    if(ret != pdFALSE)
+        return NO_ERR;
+    else
+        return TIMEOUT_ERR;
+}
+
+void SatLib::UART::end()
+{
+    while(waitingTaskTx != NULL) // wait for any pending writes to finish
+        vTaskDelay(1); // give UART time to finish writing and give the writing task time to be notified.
+
+    while(waitingTaskRx != NULL) // avoid a situation where you cause some task to block forever by calling end.
+        vTaskDelay(1); // give the task time to get the stuff from UART.
+
+    *UCAxIE = 0; // prevent erroneous reads or sends during this time.
+
+    // unassign GPIO from the module.
+    *PxSEL0 &= ~(PxSEL0BITS); // clear PxSEL0
+    *PxSEL1 &= ~(PxSEL1BITS); // clear PxSEL1
+    PM5CTL0 &= ~LOCKLPM5; // ensure GPIO changes take effect
+
+    this->baudrate = 0; // reset this variable since it's no longer valid.
+
+    *UCAxCTLW0 = UCSWRST;
+    *UCAxBRW = 0;
+    *UCAxMCTLW = 0;
+    unsigned int dummy = *UCAxRXBUF; // read UCAxRXBUF to clear interrupt.
+    *UCAxCTLW0 = 0;
+
+    RxBuffer->reset();
+    TxBuffer->reset();
 }
