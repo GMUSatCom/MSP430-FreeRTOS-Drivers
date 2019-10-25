@@ -228,6 +228,9 @@ size_t SatLib::SPI::read(uint8_t * bytes, size_t bytesToRead)
 void SatLib::SPI::transfer()
 {
 
+    xSemaphoreTake(TxChannel->finished, 0); // Guaranteed to work, so need to wait
+    xSemaphoreTake(RxChannel->finished, 0); // by taking these, we ensure that this function will only return when the transaction is complete.
+
     *(registers->UCAxIFG) &= ~UCTXIFG; // clear this bit if has been set.
 
     // set DMA source addresses
@@ -248,30 +251,25 @@ void SatLib::SPI::transfer()
     *(TxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_3 | DMADSTINCR_0 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN | DMAIE;
     *(RxChannel->DMAxCTL) = DMADT_0 | DMASRCINCR_0 | DMADSTINCR_3 | DMADSTBYTE | DMASRCBYTE | DMALEVEL | DMAEN | DMAIE;
 
-    xSemaphoreTake(TxChannel->finished, 0); // Guaranteed to be taken so no need to wait.
-    xSemaphoreTake(RxChannel->finished, 0); // Guaranteed to be taken so no need to wait.
-
     *(registers->UCAxIFG) |= UCTXIFG;
+
+    xSemaphoreTake(TxChannel->finished, portMAX_DELAY); // wait for current transactions to complete
+    xSemaphoreTake(RxChannel->finished, portMAX_DELAY);
 
     this->TransactionByteSize = 0; // reset this to zero for the next transfer.
 }
 
 void SatLib::SPI::endTransaction()
 {
-    // TODO check if the transaction is finished. If not, wait.
-    xSemaphoreTake(this->TxChannel->finished, portMAX_DELAY); // should work as soon as the DMA transaction finishes.
-    xSemaphoreTake(this->RxChannel->finished, portMAX_DELAY);
     if((*(registers->UCAxCTLW0) & UCMST) == UCMST) // if configured as master
     {
-        // set size to zero (prevents erroneous DMA transfers while the other writes occur)
+         // set size to zero (prevents erroneous DMA transfers while the other writes occur)
         *(TxChannel->DMAxSZ) = 0;
         *(RxChannel->DMAxSZ) = 0;
 
-        DMACTL2 &= ~(Tx_DMAxTSEL | Rx_DMAxTSEL); // remove the triggers
-
-        // set DMAxCTL to default values
-        *(TxChannel->DMAxCTL) = 0;
-        *(RxChannel->DMAxCTL) = 0;
+        // Remove DMA triggers
+        *(TxChannel->DMACTLx) &= ~Tx_DMAxTSEL;
+        *(RxChannel->DMACTLx) &= ~Rx_DMAxTSEL;
 
         // reset registers
         *(registers->UCAxCTLW0) |= UCSWRST;

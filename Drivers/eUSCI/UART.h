@@ -18,7 +18,7 @@
 
 #include "../DriverConfig.h"
 #include "eUSCI_A.h"
-#include "RingBuffer.h"
+#include "Data Structures/RingBuffer/RingBuffer.h"
 
 namespace SatLib
 {
