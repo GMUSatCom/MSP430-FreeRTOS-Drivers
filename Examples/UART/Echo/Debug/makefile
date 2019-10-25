@@ -10,7 +10,7 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
-"./blink.obj" \
+"./echo.obj" \
 "./External Source Files/FreeRTOSMissingPortFuncs.obj" \
 "./External Source Files/RTOSHooks.obj" \
 "./External Source Files/SPI.obj" \
@@ -173,9 +173,9 @@ Echo\ Example.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "blink.obj" "External Source Files\FreeRTOSMissingPortFuncs.obj" "External Source Files\RTOSHooks.obj" "External Source Files\SPI.obj" "External Source Files\SatLib.obj" "External Source Files\SatLibPort.obj" "External Source Files\UART.obj" "External Source Files\croutine.obj" "External Source Files\event_groups.obj" "External Source Files\list.obj" "External Source Files\port.obj" "External Source Files\portext.obj" "External Source Files\queue.obj" "External Source Files\stream_buffer.obj" "External Source Files\tasks.obj" "External Source Files\timers.obj" 
+	-$(RM) "echo.obj" "External Source Files\FreeRTOSMissingPortFuncs.obj" "External Source Files\RTOSHooks.obj" "External Source Files\SPI.obj" "External Source Files\SatLib.obj" "External Source Files\SatLibPort.obj" "External Source Files\UART.obj" "External Source Files\croutine.obj" "External Source Files\event_groups.obj" "External Source Files\list.obj" "External Source Files\port.obj" "External Source Files\portext.obj" "External Source Files\queue.obj" "External Source Files\stream_buffer.obj" "External Source Files\tasks.obj" "External Source Files\timers.obj" 
 	-$(RM) "External Source Files\croutine.d" "External Source Files\event_groups.d" "External Source Files\list.d" "External Source Files\port.d" "External Source Files\queue.d" "External Source Files\stream_buffer.d" "External Source Files\tasks.d" "External Source Files\timers.d" 
-	-$(RM) "blink.d" "External Source Files\FreeRTOSMissingPortFuncs.d" "External Source Files\RTOSHooks.d" "External Source Files\SPI.d" "External Source Files\SatLib.d" "External Source Files\SatLibPort.d" "External Source Files\UART.d" 
+	-$(RM) "echo.d" "External Source Files\FreeRTOSMissingPortFuncs.d" "External Source Files\RTOSHooks.d" "External Source Files\SPI.d" "External Source Files\SatLib.d" "External Source Files\SatLibPort.d" "External Source Files\UART.d" 
 	-$(RM) "External Source Files\portext.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

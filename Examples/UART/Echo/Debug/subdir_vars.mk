@@ -6,24 +6,24 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../blink.cpp 
+../echo.cpp 
 
 CMD_SRCS += \
 ../lnk_msp430fr5994.cmd 
 
 OBJS += \
-./blink.obj 
+./echo.obj 
 
 CPP_DEPS += \
-./blink.d 
+./echo.d 
 
 OBJS__QUOTED += \
-"blink.obj" 
+"echo.obj" 
 
 CPP_DEPS__QUOTED += \
-"blink.d" 
+"echo.d" 
 
 CPP_SRCS__QUOTED += \
-"../blink.cpp" 
+"../echo.cpp" 
 
 

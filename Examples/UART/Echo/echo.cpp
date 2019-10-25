@@ -1,21 +1,3 @@
-//***************************************************************************************
-//  MSP430 Blink the LED Demo - Software Toggle P1.0
-//
-//  Description; Toggle P1.0 by xor'ing P1.0 inside of a software loop.
-//  ACLK = n/a, MCLK = SMCLK = default DCO
-//
-//                MSP430x5xx
-//             -----------------
-//         /|\|              XIN|-
-//          | |                 |
-//          --|RST          XOUT|-
-//            |                 |
-//            |             P1.0|-->LED
-//
-//  Texas Instruments, Inc
-//  July 2013
-//***************************************************************************************
-
 #include <msp430.h>
 #include <FreeRTOS.h> // required for task.h
 #include <task.h> // xTaskCreateStatic

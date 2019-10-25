@@ -27,4 +27,8 @@ namespace SatLib
     }DMA_Channel_type;
 
     extern DMA_Channel_type DMA_Channels[];
+	
+	BaseType_t xHigherPriorityTaskWokenByDMA;
+	
+	void DMA_IRQHandler() __attribute__((hot, flatten));
 }
