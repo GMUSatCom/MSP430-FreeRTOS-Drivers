@@ -80,7 +80,7 @@ namespace SatLib
          */
         static void setSeconds(uint8_t seconds)
         {
-
+            RTCSEC = seconds;
         }
 
         /**
@@ -88,7 +88,7 @@ namespace SatLib
          */
         static void setMinutes(uint8_t minutes)
         {
-
+            RTCMIN = minutes;
         }
 
         /**
@@ -96,7 +96,15 @@ namespace SatLib
          */
         static void setHours(uint8_t hours)
         {
+            RTCHOUR = hours;
+        }
 
+        /**
+         * Sets the day of the week.
+         */
+        static void setDayOfTheWeek(uint8_t dayOfTheWeek)
+        {
+            RTCDOW = dayOfTheWeek;
         }
 
         /**
@@ -104,7 +112,7 @@ namespace SatLib
          */
         static void setDay(uint8_t day)
         {
-
+            RTCDAY = day;
         }
 
         /**
@@ -112,7 +120,7 @@ namespace SatLib
          */
         static void setMonth(uint8_t month)
         {
-
+            RTCMON = month;
         }
 
         /**
@@ -120,7 +128,7 @@ namespace SatLib
          */
         static void setYear(uint16_t year)
         {
-
+            RTCYEAR = year;
         }
 
         /**
@@ -144,6 +152,9 @@ namespace SatLib
             RTCDOW = dayOfTheWeek;
         }
 
+        /**
+         * Initializes the LFXT and the RTC. The RTC requires a 32768 Hz external oscillator on LFXT.
+         */
         static void initRTC()
         {
             PJSEL0 |= BIT4 | BIT5; // configure LFXT pins
@@ -160,15 +171,21 @@ namespace SatLib
             CSCTL0_H = 0; // re-lock the clock controls.
 
             RTCCTL0 = RTCKEY;
-            RTCCTL13 |= RTCMODE | RTCHOLD /*| RTCBCD*/; // calendar mode
+            RTCCTL13 |= RTCMODE | RTCHOLD; // calendar mode
         }
 
+        /**
+         * Starts and locks the RTC.
+         */
         static void startClock()
         {
             RTCCTL13 &= ~(RTCHOLD);
             RTCCTL0 &= ~(RTCKEY);
         }
 
+        /**
+         * Stops and unlocks the RTC.
+         */
         static void stopClock()
         {
             RTCCTL0 |= RTCKEY;

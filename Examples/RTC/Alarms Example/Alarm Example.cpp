@@ -63,21 +63,9 @@ void clockTask(void* pvparams)
 {
     __no_operation();
     SatLib::RTC::initRTC(); // initialize the RTC hardware. All of RTC's member functions are static, no object needs to be created.
-    SatLib::RTC::setDate(THURSDAY, 31, 10, 2019); // set the date to October 31st, 2019
-    SatLib::RTC::setTime(19, 30, 30); // set the time to 6:30 pm
+    SatLib::RTC::setDate(TUESDAY, 31, 12, 2019); // set the date to October 31st, 2019
+    SatLib::RTC::setTime(23, 59, 30); // set the time to 6:30 pm
     SatLib::RTC::startClock();
-
-    /*RTCCTL0 = RTCKEY;
-    RTCCTL13 = RTCMODE | RTCHOLD;
-    RTCYEAR = 2019;
-    RTCMON = 10;
-    RTCDAY = 31;
-    RTCDOW = THURSDAY;
-    RTCHOUR = 18;
-    RTCMIN = 54;
-    RTCSEC = 30;
-    RTCCTL13 &= ~RTCHOLD;
-    RTCCTL0 &= ~RTCKEY;*/
 
     Serial.begin(9600, UCSSEL__SMCLK, 4000000);
 
