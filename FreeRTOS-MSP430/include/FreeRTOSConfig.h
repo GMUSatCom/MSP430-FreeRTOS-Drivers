@@ -46,7 +46,7 @@ __persistent keyword to be used.  See http://www.freertos.org/a00111.html#heap_4
 #define configAPPLICATION_ALLOCATED_HEAP		0
 #define configUSE_PREEMPTION					1
 #define configMAX_PRIORITIES					( 7 )
-#define configCPU_CLOCK_HZ						( 2700000 )
+#define configCPU_CLOCK_HZ						( 4000000 )
 #define configTICK_RATE_HZ						( 50 )
 #define configTOTAL_HEAP_SIZE					(0)
 #define configMAX_TASK_NAME_LEN					( 15 )

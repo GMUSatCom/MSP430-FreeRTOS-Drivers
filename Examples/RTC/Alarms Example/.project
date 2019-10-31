@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Alarm Example</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.ScannerConfigBuilder</name>
+			<triggers>full,incremental,</triggers>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.ti.ccstudio.core.ccsNature</nature>
+		<nature>org.eclipse.cdt.core.cnature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>External Source Files/DMA.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/src/DMA.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/FreeRTOSMissingPortFuncs.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/FreeRTOSMissingPortFuncs.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/RTOSHooks.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/RTOSHooks.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/SPI.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/src/SPI.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/SatLib.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/SatLib.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/SatLibPort.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/SatLibPort.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/UART.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Drivers/src/UART.cpp</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/croutine.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/croutine.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/event_groups.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/event_groups.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/list.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/list.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/port.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/port.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/portext.asm</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/portext.asm</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/queue.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/queue.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/stream_buffer.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/stream_buffer.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/tasks.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/tasks.c</locationURI>
+		</link>
+		<link>
+			<name>External Source Files/timers.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/FreeRTOS-MSP430/timers.c</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
