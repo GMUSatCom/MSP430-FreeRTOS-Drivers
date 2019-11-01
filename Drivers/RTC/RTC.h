@@ -3,13 +3,7 @@
 #include <stdint.h>
 #include <msp430.h>
 
-#define SUNDAY 0x00
-#define MONDAY 0x01
-#define TUESDAY 0x02
-#define WEDNESDAY 0x03
-#define THURSDAY 0x04
-#define FRIDAY 0x05
-#define SATURDAY 0x06
+#include "Alarm.h"
 
 namespace SatLib
 {
@@ -190,6 +184,31 @@ namespace SatLib
         {
             RTCCTL0 |= RTCKEY;
             RTCCTL0 |= RTCHOLD;
+        }
+
+        /**
+         * Adds the specified alarm to the list of alarms.
+         * Requires that user provide memory for the alarm by providing an instance of the alarm class.
+         */
+        static void setAlarm(Alarm* alarm, DateTime * timestamp, void(*alarmHandler)(void))
+        {
+
+        }
+
+        /**
+         * Finds and removes the specified alarm from the list of alarms.
+         */
+        static void removeAlarm(DateTime alarm)
+        {
+
+        }
+
+        /**
+         * Initialize alarm values. Any negative numbers are replaced with today's time and date.
+         */
+        static void initializeAlarm(DateTime * alarm)
+        {
+
         }
     };
 }

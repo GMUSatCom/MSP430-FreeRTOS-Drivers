@@ -68,6 +68,36 @@ namespace SatLib
             return val;
         }
 
+        T peekPos(size_t location)
+        {
+            return buf_[(location + head_) % max_size_]; // returns the value at location
+        }
+
+        /**
+         * Places item at location, replacing whatever was there already.
+         * Returns the item replaced.
+         */
+        T replacePos(size_t location, T item)
+        {
+            T replacedItem = buf_[(location + head_) % max_size_];
+            buf_[(location + head_) % max_size_] = item;
+            return replacedItem;
+        }
+
+        /**
+         * Inserts item at location
+         */
+        void insert(size_t location, T item)
+        {
+            T temp = item;
+            for(location; location < size; location++)
+            {
+                temp = replacePos(location, temp);
+            }
+
+            this->put(temp); // use put for the last one so head_ and tail_ are correct
+        }
+
         void reset()
         {
             head_ = tail_;
