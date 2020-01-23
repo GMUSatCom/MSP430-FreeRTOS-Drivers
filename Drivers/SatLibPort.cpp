@@ -8,6 +8,7 @@
 #include <string.h> // for NULL
 #include "eUSCI/eUSCI_A.h"
 #include "Memory/DMA.h"
+#include "GPIO/GPIO.h"
 
 namespace SatLib
 {
@@ -19,6 +20,27 @@ namespace SatLib
      {&P5SEL0, &P5SEL1, (BIT4 | BIT5), 0, (BIT4 | BIT5 | BIT6), 0, &UCA2TXBUF, &UCA2RXBUF, &UCA2MCTLW, &UCA2CTLW0, &UCA2BRW, &UCA2IE, &UCA2IFG, &UCA2IV, 3, 4, 5, -1, DMA3TSEL_15, DMA3TSEL_14, DMA4TSEL_15, DMA4TSEL_14, DMA5TSEL_15, DMA5TSEL_14, 0, 0},
      {&P6SEL0, &P6SEL1, (BIT0 | BIT1), 0, (BIT0 | BIT1 | BIT2), 0, &UCA3TXBUF, &UCA3RXBUF, &UCA3MCTLW, &UCA3CTLW0, &UCA3BRW, &UCA3IE, &UCA3IFG, &UCA3IV, 3, 4, 5, -1, DMA3TSEL_17, DMA3TSEL_16, DMA4TSEL_17, DMA4TSEL_16, DMA5TSEL_17, DMA5TSEL_16, 0, 0}
     };
+
+    // Contains all of the addresses of the GPIO registers for each port
+    GPIO_Type GPIO_Ports[] =
+    {
+     {&P1IN, &P1OUT, &P1DIR, &P1REN, &P1SEL0, &P1SEL1, &P1SELC, &P1IES, &P1IE, &P1IFG},
+     {&P2IN, &P2OUT, &P2DIR, &P2REN, &P2SEL0, &P2SEL1, &P2SELC, &P2IES, &P2IE, &P2IFG},
+     {&P3IN, &P3OUT, &P3DIR, &P3REN, &P3SEL0, &P3SEL1, &P3SELC, &P3IES, &P3IE, &P3IFG},
+     {&P4IN, &P4OUT, &P4DIR, &P4REN, &P4SEL0, &P4SEL1, &P4SELC, &P4IES, &P4IE, &P4IFG},
+     {&P5IN, &P5OUT, &P5DIR, &P5REN, &P5SEL0, &P5SEL1, &P5SELC, &P5IES, &P5IE, &P5IFG},
+     {&P6IN, &P6OUT, &P6DIR, &P6REN, &P6SEL0, &P6SEL1, &P6SELC, &P6IES, &P6IE, &P6IFG},
+     {&P7IN, &P7OUT, &P7DIR, &P7REN, &P7SEL0, &P7SEL1, &P7SELC, &P7IES, &P7IE, &P7IFG},
+     {&P8IN, &P8OUT, &P8DIR, &P8REN, &P8SEL0, &P8SEL1, &P8SELC, &P8IES, &P8IE, &P8IFG}
+     //{&PJIN_L, &PJOUT_L, &PJDIR_L, &PJREN_L, &PJSEL0_L, &PJSEL1_L, &PJSELC_L},
+     //{&PJIN_H, &PJOUT_H, &PJDIR_H, &PJREN_H, &PJSEL0_H, &PJSEL1_H, &PJSELC_H}
+    };
+    // only lower port of PJ ports working since available MSP430s for testing do not
+    // use the upper 8 PJBITS currently only lower 8 bits &PJIN_L, &PJOUT_L ... are
+    // confirmed to work
+
+    // variable created so single number can be used for selecting pin in GPIO functions
+    uint8_t GPIO_BITS[] = {BIT0,BIT1,BIT2,BIT3,BIT4,BIT5,BIT6,BIT7};
 
     StaticSemaphore_t DMA0MutexCB;
     StaticSemaphore_t DMA1MutexCB;
